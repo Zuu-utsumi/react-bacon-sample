@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="auth-token" content="P7nvyq5c87SmnvPf14dVryuWXacxNkk5">
+  <meta name="auth-subject" content="aWpRN0NNeldkSWREemlaQUpPNmFLZz09LS0yUDUxeHJyUmF6WGZzRUxTeStkcDlBPT0=--0f2f214e9e8a6c303d12cd117dad7d5d454116a5">
+</head>
+<body>
+
+<div id="top" class="container"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.4/jquery.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-mockjax/1.6.2/jquery.mockjax.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/immutable/3.7.5/immutable.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bacon.js/0.7.80/Bacon.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/0.14.2/react.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/0.14.2/react-dom.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-core/5.8.23/browser.min.js"></script>
+<script src="js/mock.js"></script>
+<script src="js/dispatcher.js"></script>
+
+<script type="text/babel">
+class ViewModel {
+  constructor(initialState) {
+    var d = new Dispatcher();
+    this.streams = Bacon.update(initialState,
+      [d.stream('update')], this.getNews
+    )
+  }
+
+  getNews(prevState, arg1, arg2, arg3) {
+    debugger;
+    return Bacon.fromPromise(this.ajax("GET", "/v2/news"));
+  }
+}
+
+var NewsList = React.createClass({
+  getInitialState() {
+    this.state = {news: []}
+    return this.state;
+  },
+
+  componentDidMount() {
+    this.vm = new ViewModel(this.state);
+    this.d = new Dispatcher();
+  },
+
+  render() {
+    return (
+      <div className="main">
+        <h1>NewsList</h1>
+        <button onClick={this.handleClickBtn}>Get News!</button>
+        <ul>
+          {this.state.news.map((obj, idx) => <li key={obj.id}>{obj.title}</li>)}
+        </ul>
+      </div>
+    );
+  },
+
+  handleClickBtn(e) {
+    e.preventDefault();
+    Bacon.fromPromise(this.ajax("GET", "/v2/news")).onValue(function(res) {
+      console.debug(res);
+      this.setState({news: this.state.news.concat(res["news"])});
+    }.bind(this));
+  },
+
+  ajax(method, url, data) {
+    return Promise.resolve($.ajax({
+      type: method,
+      url: url,
+      data: data,
+      dataType: "json",
+      headers: {
+        'X-Auth-Token': "Bearer " + this.authToken(),
+        'X-Auth-Subject': this.authSubject()
+      }
+    }));
+  },
+
+  authToken() {
+    return $('meta[name=auth-token]').attr('content');
+  },
+
+  authSubject() {
+    return $('meta[name=auth-subject]').attr('content');
+  }
+});
+
+ReactDOM.render(<NewsList />, document.getElementById("top"));
+
+</script>
+</html>
