@@ -21,27 +21,59 @@
 <script type="text/babel">
 class ViewModel {
   constructor(initialState) {
-    var d = new Dispatcher();
-    this.streams = Bacon.update(initialState,
-      [d.stream('update')], this.getNews
+    this.d = new Dispatcher();
+    this.streams = Bacon.update(
+      initialState,
+      [this.d.stream('update')], this._updateNews
     )
   }
 
-  getNews(prevState, arg1, arg2, arg3) {
-    debugger;
-    return Bacon.fromPromise(this.ajax("GET", "/v2/news"));
+  _updateNews(prevState, response) {
+    prevState["news"] = prevState["news"].concat(response["news"]);
+    return prevState;
+  }
+
+  updateNews() {
+    this.d.plug("update",
+      Bacon.fromPromise(this.ajax("GET", "/v2/news"))
+    );
+  }
+
+  ajax(method, url, data) {
+    return Promise.resolve($.ajax({
+      type: method,
+      url: url,
+      data: data,
+      dataType: "json",
+      headers: {
+        'X-Auth-Token': "Bearer " + this.authToken(),
+        'X-Auth-Subject': this.authSubject()
+      }
+    }));
+  }
+
+  authToken() {
+    return $('meta[name=auth-token]').attr('content');
+  }
+
+  authSubject() {
+    return $('meta[name=auth-subject]').attr('content');
   }
 }
 
 var NewsList = React.createClass({
   getInitialState() {
-    this.state = {news: []}
-    return this.state;
+    return {news: []};
   },
 
   componentDidMount() {
-    this.vm = new ViewModel(this.state);
     this.d = new Dispatcher();
+    this.vm = new ViewModel(this.state);
+
+    this.vm.streams.onValue(function(newState) {
+      console.debug(newState);
+      this.setState(newState);
+    }.bind(this));
   },
 
   render() {
@@ -58,31 +90,7 @@ var NewsList = React.createClass({
 
   handleClickBtn(e) {
     e.preventDefault();
-    Bacon.fromPromise(this.ajax("GET", "/v2/news")).onValue(function(res) {
-      console.debug(res);
-      this.setState({news: this.state.news.concat(res["news"])});
-    }.bind(this));
-  },
-
-  ajax(method, url, data) {
-    return Promise.resolve($.ajax({
-      type: method,
-      url: url,
-      data: data,
-      dataType: "json",
-      headers: {
-        'X-Auth-Token': "Bearer " + this.authToken(),
-        'X-Auth-Subject': this.authSubject()
-      }
-    }));
-  },
-
-  authToken() {
-    return $('meta[name=auth-token]').attr('content');
-  },
-
-  authSubject() {
-    return $('meta[name=auth-subject]').attr('content');
+    this.vm.updateNews();
   }
 });
 
