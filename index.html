@@ -19,6 +19,29 @@
 <script src="js/dispatcher.js"></script>
 
 <script type="text/babel">
+class API {
+  static ajax(method, url, data) {
+    return Promise.resolve($.ajax({
+      type: method,
+      url: url,
+      data: data,
+      dataType: "json",
+      headers: {
+        'X-Auth-Token': "Bearer " + this.authToken(),
+        'X-Auth-Subject': this.authSubject()
+      }
+    }));
+  }
+
+  static authToken() {
+    return $('meta[name=auth-token]').attr('content');
+  }
+
+  static authSubject() {
+    return $('meta[name=auth-subject]').attr('content');
+  }
+}
+
 class ViewModel {
   constructor(initialState) {
     this.d = new Dispatcher();
@@ -35,30 +58,7 @@ class ViewModel {
   }
 
   updateNews() {
-    this.d.plug("update",
-      Bacon.fromPromise(this.ajax("GET", "/v2/news"))
-    );
-  }
-
-  ajax(method, url, data) {
-    return Promise.resolve($.ajax({
-      type: method,
-      url: url,
-      data: data,
-      dataType: "json",
-      headers: {
-        'X-Auth-Token': "Bearer " + this.authToken(),
-        'X-Auth-Subject': this.authSubject()
-      }
-    }));
-  }
-
-  authToken() {
-    return $('meta[name=auth-token]').attr('content');
-  }
-
-  authSubject() {
-    return $('meta[name=auth-subject]').attr('content');
+    this.d.plug("update", Bacon.fromPromise(API.ajax("GET", "/v2/news")));
   }
 }
 
