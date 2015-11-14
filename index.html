@@ -68,13 +68,8 @@ var NewsList = React.createClass({
   },
 
   componentDidMount() {
-    this.d = new Dispatcher();
     this.vm = new ViewModel(this.state);
-
-    this.vm.streams.onValue(function(newState) {
-      console.debug(newState);
-      this.setState(newState);
-    }.bind(this));
+    this.vm.streams.onValue(this.setState.bind(this));
   },
 
   render() {
