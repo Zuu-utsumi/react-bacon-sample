@@ -22,15 +22,16 @@
 class ViewModel {
   constructor(initialState) {
     this.d = new Dispatcher();
+
     this.streams = Bacon.update(
       initialState,
-      [this.d.stream('update')], this._updateNews
+      [this.d.stream('update')], _updateNews
     )
-  }
 
-  _updateNews(prevState, response) {
-    prevState["news"] = prevState["news"].concat(response["news"]);
-    return prevState;
+    function _updateNews(prevState, response) {
+      prevState["news"] = prevState["news"].concat(response["news"]);
+      return prevState;
+    }
   }
 
   updateNews() {
