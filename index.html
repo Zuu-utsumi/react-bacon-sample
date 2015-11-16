@@ -42,6 +42,8 @@ class API {
   }
 }
 
+const News = Immutable.Record({id: 0, title: "", url: "", m_stock_companies: []});
+
 class ViewModel {
   constructor(initialState) {
     this.d = new Dispatcher();
@@ -52,23 +54,24 @@ class ViewModel {
     )
 
     function _updateNews(prevState, response) {
-      prevState["news"] = prevState["news"].concat(response["news"]);
+      var news = response["news"].map(function(data) { return News(data); })
+      prevState["news"] = prevState["news"].concat(news);
       return prevState;
     }
 
-    function getNewsStream() {
-      return Bacon.fromPromise(API.ajax("GET", "/v2/news"));
+    function getNewsStream(data) {
+      return Bacon.fromPromise(API.ajax("GET", "/v2/news", data));
     }
   }
 
-  updateNews() {
-    this.d.push("update");
+  getNextNews(page = 1) {
+    this.d.push("update", {page: page});
   }
 }
 
 var NewsList = React.createClass({
   getInitialState() {
-    return {news: []};
+    return {news: Immutable.List([])};
   },
 
   componentDidMount() {
@@ -82,7 +85,7 @@ var NewsList = React.createClass({
         <h1>NewsList</h1>
         <button onClick={this.handleClickBtn}>Get News!</button>
         <ul>
-          {this.state.news.map((obj, idx) => <li key={obj.id}>{obj.title}</li>)}
+          {this.state.news.map((news) => <li key={news.id}>{news.title}</li>)}
         </ul>
       </div>
     );
@@ -90,7 +93,17 @@ var NewsList = React.createClass({
 
   handleClickBtn(e) {
     e.preventDefault();
-    this.vm.updateNews();
+
+    var newsPerPage = 10,
+        nextPage;
+
+    if (this.state.news.size === 0) {
+      nextPage = 1;
+    } else {
+      nextPage = Math.ceil(this.state.news.size / newsPerPage) + 1;
+    }
+
+    this.vm.getNextNews(nextPage);
   }
 });
 
