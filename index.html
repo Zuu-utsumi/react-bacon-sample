@@ -48,17 +48,21 @@ class ViewModel {
 
     this.streams = Bacon.update(
       initialState,
-      [this.d.stream('update')], _updateNews
+      [this.d.stream('update').debounceImmediate(1500).flatMap(getNewsStream)], _updateNews
     )
 
     function _updateNews(prevState, response) {
       prevState["news"] = prevState["news"].concat(response["news"]);
       return prevState;
     }
+
+    function getNewsStream() {
+      return Bacon.fromPromise(API.ajax("GET", "/v2/news"));
+    }
   }
 
   updateNews() {
-    this.d.plug("update", Bacon.fromPromise(API.ajax("GET", "/v2/news")));
+    this.d.push("update");
   }
 }
 
