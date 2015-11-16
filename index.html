@@ -48,17 +48,27 @@ class ViewModel {
 
     this.streams = Bacon.update(
       initialState,
+      [this.d.stream('pushEvent').throttle(1500)], _pushEvent.bind(this),
       [this.d.stream('update')], _updateNews
     )
+
+    function _pushEvent(prevState, event) {
+      this.d.plug("update", getNewsStream());
+      return prevState;
+    }
 
     function _updateNews(prevState, response) {
       prevState["news"] = prevState["news"].concat(response["news"]);
       return prevState;
     }
+
+    function getNewsStream() {
+      return Bacon.fromPromise(API.ajax("GET", "/v2/news"));
+    }
   }
 
   updateNews() {
-    this.d.plug("update", Bacon.fromPromise(API.ajax("GET", "/v2/news")));
+    this.d.push("pushEvent");
   }
 }
 
