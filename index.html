@@ -56,13 +56,13 @@ class ViewModel {
       return prevState;
     }
 
-    function getNewsStream() {
-      return Bacon.fromPromise(API.ajax("GET", "/v2/news"));
+    function getNewsStream(data) {
+      return Bacon.fromPromise(API.ajax("GET", "/v2/news", data));
     }
   }
 
-  updateNews() {
-    this.d.push("update");
+  getNextNews(page = 1) {
+    this.d.push("update", {page: page});
   }
 }
 
@@ -90,7 +90,17 @@ var NewsList = React.createClass({
 
   handleClickBtn(e) {
     e.preventDefault();
-    this.vm.updateNews();
+
+    var newsPerPage = 10,
+        nextPage;
+
+    if (this.state.news.length === 0) {
+      nextPage = 1;
+    } else {
+      nextPage = Math.ceil(this.state.news.length / newsPerPage) + 1;
+    }
+
+    this.vm.getNextNews(nextPage);
   }
 });
 
