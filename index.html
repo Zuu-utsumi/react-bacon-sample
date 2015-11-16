@@ -42,6 +42,8 @@ class API {
   }
 }
 
+const News = Immutable.Record({id: 0, title: "", url: "", m_stock_companies: []});
+
 class ViewModel {
   constructor(initialState) {
     this.d = new Dispatcher();
@@ -52,7 +54,8 @@ class ViewModel {
     )
 
     function _updateNews(prevState, response) {
-      prevState["news"] = prevState["news"].concat(response["news"]);
+      var news = response["news"].map(function(data) { return News(data); })
+      prevState["news"] = prevState["news"].concat(news);
       return prevState;
     }
 
@@ -68,7 +71,7 @@ class ViewModel {
 
 var NewsList = React.createClass({
   getInitialState() {
-    return {news: []};
+    return {news: Immutable.List([])};
   },
 
   componentDidMount() {
@@ -82,7 +85,7 @@ var NewsList = React.createClass({
         <h1>NewsList</h1>
         <button onClick={this.handleClickBtn}>Get News!</button>
         <ul>
-          {this.state.news.map((obj, idx) => <li key={obj.id}>{obj.title}</li>)}
+          {this.state.news.map((news) => <li key={news.id}>{news.title}</li>)}
         </ul>
       </div>
     );
@@ -94,10 +97,10 @@ var NewsList = React.createClass({
     var newsPerPage = 10,
         nextPage;
 
-    if (this.state.news.length === 0) {
+    if (this.state.news.size === 0) {
       nextPage = 1;
     } else {
-      nextPage = Math.ceil(this.state.news.length / newsPerPage) + 1;
+      nextPage = Math.ceil(this.state.news.size / newsPerPage) + 1;
     }
 
     this.vm.getNextNews(nextPage);
